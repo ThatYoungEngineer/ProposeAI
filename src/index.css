@@ -1,0 +1,45 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --font-sans: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "Courier New", monospace;
+  --app-bg: radial-gradient(circle at top left, #e2e8f0 0%, #f6f8fb 45%, #f8fafc 100%);
+  --panel-bg: #ffffff;
+  --panel-border: rgba(15, 23, 42, 0.08);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent: #1d4ed8;
+  --accent-soft: rgba(29, 78, 216, 0.12);
+  --shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="dark"] {
+  --app-bg: radial-gradient(circle at top left, #1e293b 0%, #0b1220 45%, #020617 100%);
+  --panel-bg: #0f172a;
+  --panel-border: rgba(148, 163, 184, 0.16);
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --accent: #38bdf8;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --shadow: 0 32px 80px rgba(2, 6, 23, 0.55);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  background: var(--app-bg);
+  color: var(--text-primary);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
