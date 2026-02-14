@@ -1,7 +1,8 @@
 import { create } from "apisauce";
+import { BASE_URL } from "../config/config";
 
 const apiClient = create({
-    baseURL: process.env.BASE_URL
-})
+  baseURL: BASE_URL,
+});
 
 export default apiClient;

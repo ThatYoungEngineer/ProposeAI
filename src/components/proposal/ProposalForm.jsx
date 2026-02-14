@@ -1,11 +1,8 @@
 import {
   Form,
   Input,
-  InputNumber,
   Progress,
-  Select,
   Space,
-  Switch,
   Typography,
 } from "..";
 
@@ -13,15 +10,33 @@ const ProposalForm = ({
   form,
   values,
   onValuesChange,
-  autoGenerate,
-  onToggleAutoGenerate,
   completion,
   copy,
-  riskOptions,
+  requiredFields,
 }) => {
+  const requiredSet = new Set(requiredFields || []);
+
+  const renderLabel = (label, fieldKey) => {
+    const isRequired = requiredSet.has(fieldKey);
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-medium text-[color:var(--text-primary)]">
+          {label}
+        </span>
+        {isRequired ? (
+          <span className="text-xs text-red-500">*</span>
+        ) : (
+          <span className="text-xs text-[color:var(--text-secondary)]">
+            {copy.form.optionalLabel}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
-    <Space direction="vertical" size="large" className="proposal-form">
-      <div className="proposal-form__header">
+    <Space direction="vertical" size="large" className="w-full">
+      <div className="proposal-form__header mt-5">
         <div>
           <Typography.Title level={4} className="proposal-title">
             {copy.form.title}
@@ -29,10 +44,6 @@ const ProposalForm = ({
           <Typography.Paragraph type="secondary">
             {copy.form.description}
           </Typography.Paragraph>
-        </div>
-        <div className="proposal-toggle">
-          <Typography.Text>{copy.form.autoGenerate}</Typography.Text>
-          <Switch checked={autoGenerate} onChange={onToggleAutoGenerate} />
         </div>
       </div>
 
@@ -48,43 +59,53 @@ const ProposalForm = ({
         onValuesChange={onValuesChange}
         requiredMark={false}
         validateTrigger="onChange"
+        className="proposal-form-glass"
       >
         <div className="proposal-form__grid">
           <Form.Item
-            name="projectName"
-            label={copy.form.projectName.label}
-            rules={[{ required: true, message: copy.form.projectName.required }]}
-          >
-            <Input placeholder={copy.form.projectName.placeholder} />
-          </Form.Item>
-          <Form.Item
             name="clientName"
-            label={copy.form.clientName.label}
+            label={renderLabel(copy.form.clientName.label, "clientName")}
             rules={[{ required: true, message: copy.form.clientName.required }]}
+            hasFeedback
           >
             <Input placeholder={copy.form.clientName.placeholder} />
           </Form.Item>
           <Form.Item
-            name="scope"
-            label={copy.form.scope.label}
-            rules={[{ required: true, message: copy.form.scope.required }]}
+            name="projectTitle"
+            label={renderLabel(copy.form.projectTitle.label, "projectTitle")}
+            rules={[{ required: true, message: copy.form.projectTitle.required }]}
+            hasFeedback
+          >
+            <Input placeholder={copy.form.projectTitle.placeholder} />
+          </Form.Item>
+          <Form.Item
+            name="projectScope"
+            label={renderLabel(copy.form.projectScope.label, "projectScope")}
+            rules={[{ required: true, message: copy.form.projectScope.required }]}
             className="proposal-span-2"
+            hasFeedback
           >
             <Input.TextArea
-              placeholder={copy.form.scope.placeholder}
+              placeholder={copy.form.projectScope.placeholder}
               autoSize={{ minRows: 3, maxRows: 6 }}
             />
           </Form.Item>
-          <Form.Item name="timelineStart" label={copy.form.timelineStart.label}>
-            <Input type="date" placeholder={copy.form.timelineStart.placeholder} />
-          </Form.Item>
-          <Form.Item name="timelineEnd" label={copy.form.timelineEnd.label}>
-            <Input type="date" placeholder={copy.form.timelineEnd.placeholder} />
+          <Form.Item
+            name="timelineEstimate"
+            label={renderLabel(copy.form.timelineEstimate.label, "timelineEstimate")}
+            rules={[
+              { required: true, message: copy.form.timelineEstimate.required },
+            ]}
+            hasFeedback
+          >
+            <Input placeholder={copy.form.timelineEstimate.placeholder} />
           </Form.Item>
           <Form.Item
             name="objectives"
-            label={copy.form.objectives.label}
+            label={renderLabel(copy.form.objectives.label, "objectives")}
             className="proposal-span-2"
+            rules={[{ required: true, message: copy.form.objectives.required }]}
+            hasFeedback
           >
             <Input.TextArea
               placeholder={copy.form.objectives.placeholder}
@@ -93,41 +114,65 @@ const ProposalForm = ({
           </Form.Item>
           <Form.Item
             name="deliverables"
-            label={copy.form.deliverables.label}
+            label={renderLabel(copy.form.deliverables.label, "deliverables")}
             className="proposal-span-2"
+            rules={[{ required: true, message: copy.form.deliverables.required }]}
+            hasFeedback
           >
             <Input.TextArea
               placeholder={copy.form.deliverables.placeholder}
               autoSize={{ minRows: 3, maxRows: 6 }}
             />
           </Form.Item>
-          <Form.Item name="budget" label={copy.form.budget.label}>
-            <InputNumber
-              min={0}
-              placeholder={copy.form.budget.placeholder}
-              style={{ width: "100%" }}
-            />
-          </Form.Item>
-          <Form.Item name="riskLevel" label={copy.form.riskLevel.label}>
-            <Select
-              placeholder={copy.form.riskLevel.placeholder}
-              options={riskOptions}
-            />
-          </Form.Item>
           <Form.Item
-            name="techStack"
-            label={copy.form.techStack.label}
-            className="proposal-span-2"
+            name="budgetRange"
+            label={renderLabel(copy.form.budgetRange.label, "budgetRange")}
           >
-            <Input placeholder={copy.form.techStack.placeholder} />
+            <Input placeholder={copy.form.budgetRange.placeholder} />
           </Form.Item>
           <Form.Item
-            name="notes"
-            label={copy.form.notes.label}
+            name="technologyStack"
+            label={renderLabel(copy.form.technologyStack.label, "technologyStack")}
+          >
+            <Input placeholder={copy.form.technologyStack.placeholder} />
+          </Form.Item>
+          <Form.Item
+            name="assumptions"
+            label={renderLabel(copy.form.assumptions.label, "assumptions")}
             className="proposal-span-2"
           >
             <Input.TextArea
-              placeholder={copy.form.notes.placeholder}
+              placeholder={copy.form.assumptions.placeholder}
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Form.Item>
+          <Form.Item
+            name="risks"
+            label={renderLabel(copy.form.risks.label, "risks")}
+            className="proposal-span-2"
+          >
+            <Input.TextArea
+              placeholder={copy.form.risks.placeholder}
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Form.Item>
+          <Form.Item
+            name="teamStructure"
+            label={renderLabel(copy.form.teamStructure.label, "teamStructure")}
+            className="proposal-span-2"
+          >
+            <Input.TextArea
+              placeholder={copy.form.teamStructure.placeholder}
+              autoSize={{ minRows: 2, maxRows: 4 }}
+            />
+          </Form.Item>
+          <Form.Item
+            name="supportModel"
+            label={renderLabel(copy.form.supportModel.label, "supportModel")}
+            className="proposal-span-2"
+          >
+            <Input.TextArea
+              placeholder={copy.form.supportModel.placeholder}
               autoSize={{ minRows: 2, maxRows: 4 }}
             />
           </Form.Item>

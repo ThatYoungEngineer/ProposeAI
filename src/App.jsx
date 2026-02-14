@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import Home from "./pages/mainPages/Home";
+import { useEffect, useMemo, useState } from "react";
+import { RouterProvider } from "react-router-dom";
 import { ThemeProvider } from "./components";
+import createMainRouter from "./navigations/MainNavigator";
 import "./App.css";
 
 const App = () => {
@@ -14,9 +15,14 @@ const App = () => {
     setThemeMode(isDark ? "dark" : "light");
   };
 
+  const router = useMemo(
+    () => createMainRouter({ themeMode, onToggleTheme: handleToggleTheme }),
+    [themeMode]
+  );
+
   return (
     <ThemeProvider mode={themeMode}>
-      <Home themeMode={themeMode} onToggleTheme={handleToggleTheme} />
+      <RouterProvider router={router} />
     </ThemeProvider>
   );
 };

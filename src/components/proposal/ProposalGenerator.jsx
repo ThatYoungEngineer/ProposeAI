@@ -1,257 +1,270 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  Card,
-  Divider,
-  Form,
-  Space,
-  Steps,
-  Switch,
-  Tag,
-  Typography,
-} from "..";
+import { useMemo, useRef, useState } from "react";
+import { Button, Dropdown, Form, Steps, Typography } from "..";
 import { LNG } from "../../language";
 import { proposalInitialValues } from "../../config/dummyData";
-import { proposalStages, riskLevelOptions } from "../../db/proposalConfig";
-import {
-  buildProposalDocument,
-  buildProposalSections,
-  interpolate,
-} from "../../utilities/proposalUtils";
+import proposalsApi from "../../api/proposals";
 import ProposalActions from "./ProposalActions";
 import ProposalForm from "./ProposalForm";
-import ProposalPreview from "./ProposalPreview";
-import ProposalStatus from "./ProposalStatus";
 import "./ProposalGenerator.css";
+import { IMGS, ROUTES } from "@/constants";
+import { Link } from "react-router-dom";
+import ElectricBorder from "../../ui/ElectricBorder";
 
-const ProposalGenerator = ({ themeMode, onToggleTheme }) => {
+const ProposalGenerator = () => {
   const copy = LNG.eng.proposalGenerator;
-  const resolvedTheme = themeMode === "dark" ? "dark" : "light";
-  const handleThemeChange = onToggleTheme || (() => {});
   const [form] = Form.useForm();
   const [formValues, setFormValues] = useState(proposalInitialValues);
-  const [stage, setStage] = useState("input");
-  const [autoGenerate, setAutoGenerate] = useState(true);
-  const [typedDraft, setTypedDraft] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [downloadNotice, setDownloadNotice] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previewHtml, setPreviewHtml] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const previewRef = useRef(null);
 
-  const sections = useMemo(
-    () => buildProposalSections({ values: formValues, copy }),
-    [formValues, copy]
-  );
-
-  const header = useMemo(() => {
-    const subtitle = interpolate(copy.template.headerSubtitle, {
-      clientName: formValues.clientName || copy.defaults.clientName,
-    });
-    return {
-      title: copy.template.headerTitle,
-      subtitle,
-    };
-  }, [copy, formValues.clientName]);
-
-  const proposalDocument = useMemo(
-    () =>
-      buildProposalDocument({
-        header,
-        sections,
-        footer: copy.template.footer,
-      }),
-    [header, sections, copy.template.footer]
-  );
-
-  const fullDraft = useMemo(
-    () => sections.map((section) => section.content).join(" "),
-    [sections]
+  const requiredFields = useMemo(
+    () => [
+      "clientName",
+      "projectTitle",
+      "projectScope",
+      "objectives",
+      "deliverables",
+      "timelineEstimate",
+    ],
+    [],
   );
 
   const completion = useMemo(() => {
-    const requiredFields = ["projectName", "clientName", "scope"];
     const completed = requiredFields.filter((field) => {
       const value = formValues[field];
       return Boolean(value && String(value).trim());
     }).length;
     return Math.round((completed / requiredFields.length) * 100);
-  }, [formValues]);
+  }, [formValues, requiredFields]);
 
-  const stageIndex = proposalStages.findIndex((item) => item.key === stage);
-
-  const stageStatusLabel = {
-    input: copy.generation.statusIdle,
-    generating: copy.generation.statusGenerating,
-    review: copy.generation.statusReview,
-    finalize: copy.generation.statusFinal,
-  }[stage];
-
-  useEffect(() => {
-    if (!autoGenerate || stage === "finalize" || stage === "generating") return;
-    const timeout = setTimeout(() => {
-      setStage("generating");
-    }, 600);
-    return () => clearTimeout(timeout);
-  }, [autoGenerate, formValues, stage]);
-
-  useEffect(() => {
-    if (stage !== "generating") return;
-    if (!fullDraft) {
-      setTypedDraft("");
-      setProgress(0);
-      setStage("review");
-      return;
-    }
-
-    let index = 0;
-    setTypedDraft("");
-    setProgress(0);
-
-    const interval = setInterval(() => {
-      index += 1;
-      setTypedDraft(fullDraft.slice(0, index));
-      setProgress(Math.round((index / fullDraft.length) * 100));
-
-      if (index >= fullDraft.length) {
-        clearInterval(interval);
-        setStage("review");
-      }
-    }, 18);
-
-    return () => clearInterval(interval);
-  }, [stage, fullDraft]);
-
-  useEffect(() => {
-    if (!downloadNotice) return;
-    const timeout = setTimeout(() => setDownloadNotice(""), 4000);
-    return () => clearTimeout(timeout);
-  }, [downloadNotice]);
+  const isGenerateDisabled = requiredFields.some((field) => {
+    const value = formValues[field];
+    return !(value && String(value).trim());
+  });
 
   const handleValuesChange = (_, allValues) => {
     setFormValues(allValues);
   };
 
-  const handleGenerate = () => {
-    setStage("generating");
+  const extractHtml = (response) => {
+    if (!response) return "";
+    const logoUrl =
+      "https://cdn-lfcdh.nitrocdn.com/mFNjcNCLPSOgjCCHrmuVFgbsPhpOopSJ/assets/images/optimized/rev-42e4ec9/hazentech.com/wp-content/uploads/2025/09/light-logo.svg";
+    const rawHtml =
+      typeof response === "string"
+        ? response
+        : typeof response.data === "string"
+          ? response.data
+          : typeof response.data?.html === "string"
+            ? response.data.html
+            : typeof response.data?.content === "string"
+              ? response.data.content
+              : "";
+    if (!rawHtml) return "";
+    return rawHtml.replace(/<img\b[^>]*>/gi, (tag) => {
+      if (/src\s*=/.test(tag)) {
+        return tag.replace(/src\s*=\s*(['"]).*?\1/i, `src="${logoUrl}"`);
+      }
+      return tag.replace("<img", `<img src="${logoUrl}"`);
+    });
   };
 
-  const handleFinalize = () => {
-    setStage("finalize");
+  const handleGenerate = async () => {
+    setIsSubmitting(true);
+    setErrorMessage("");
+    try {
+      await form.validateFields(requiredFields);
+      setCurrentStep(1);
+      const payload = {
+        client_name: formValues.clientName,
+        title: formValues.projectTitle,
+        description: formValues.projectScope,
+        objectives: formValues.objectives,
+        deliverables: formValues.deliverables,
+        timeline: formValues.timelineEstimate,
+        budget_range: formValues.budgetRange || "",
+        tech_stack: formValues.technologyStack || "",
+        assumptions: formValues.assumptions || "",
+        risks: formValues.risks || "",
+        team_structure: formValues.teamStructure || "",
+        support_model: formValues.supportModel || "",
+      };
+
+      const response = await proposalsApi.addProposal(payload);
+      if (!response?.ok) {
+        setErrorMessage(copy.previewModal.error);
+        setCurrentStep(0);
+        return;
+      }
+
+      const html = extractHtml(response);
+      if (!html) {
+        setErrorMessage(copy.previewModal.empty);
+        setCurrentStep(0);
+        return;
+      }
+
+      setPreviewHtml(html);
+      setIsEditing(false);
+      setHasGenerated(true);
+      setCurrentStep(2);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDownload = (format) => {
-    const fileBase =
-      formValues.projectName ||
-      copy.defaults.projectName ||
-      copy.defaults.fileNameFallback;
-    const fileName = fileBase.trim().replace(/\s+/g, "-").toLowerCase();
-    const mimeType =
-      format === "pdf"
-        ? "application/pdf"
-        : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-
-    const blob = new Blob([proposalDocument], { type: mimeType });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${fileName}.${format}`;
-    link.click();
-    URL.revokeObjectURL(link.href);
-    setDownloadNotice(copy.download.ready);
+  const handleToggleEdit = () => {
+    if (!isEditing) {
+      setIsEditing(true);
+      return;
+    }
+    const updatedHtml = previewRef.current?.innerHTML || previewHtml;
+    setPreviewHtml(updatedHtml);
+    setIsEditing(false);
   };
 
-  const stageLabel =
-    stage === "finalize"
-      ? {
-          title: copy.preview.finalTitle,
-          subtitle: copy.preview.finalSubtitle,
-          stageTag: copy.stages.finalize,
-        }
-      : {
-          title: copy.preview.draftTitle,
-          subtitle: copy.preview.draftSubtitle,
-          stageTag: copy.stages[stage] || copy.stages.input,
-        };
+  const handleDownloadPdf = () => {
+    const htmlToPrint = previewRef.current?.innerHTML || previewHtml;
+    if (!htmlToPrint) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(`<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${copy.previewModal.downloadTitle}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; }
+      h1, h2, h3 { margin: 0 0 12px; }
+      p { margin: 0 0 12px; line-height: 1.6; }
+    </style>
+  </head>
+  <body>
+    ${htmlToPrint}
+  </body>
+</html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
+  };
 
-  const draftToDisplay = stage === "generating" ? typedDraft : fullDraft;
+  const handleExport = ({ key }) => {
+    if (key === "pdf") handleDownloadPdf();
+  };
+
+  const stepItems = [
+    { title: copy.steps.input },
+    { title: copy.steps.generating },
+    { title: copy.steps.preview },
+  ];
+
+  const exportMenu = {
+    items: [
+      { key: "pdf", label: copy.previewModal.exportPdf },
+    ],
+    onClick: handleExport,
+  };
 
   return (
-    <div className={`proposal-app stage-${stage}`}>
-      <header className="proposal-header">
-        <div>
-          <Typography.Title level={2} className="proposal-title">
-            {copy.header.title}
-          </Typography.Title>
-          <Typography.Paragraph type="secondary">
-            {copy.header.subtitle}
-          </Typography.Paragraph>
-        </div>
-        <Space wrap className="proposal-header__meta">
-          <Tag color="geekblue">{copy.header.templateTag}</Tag>
-          <div className="proposal-theme-toggle">
-            <Typography.Text>{copy.header.darkMode}</Typography.Text>
-            <Switch
-              checked={resolvedTheme === "dark"}
-              onChange={handleThemeChange}
-            />
+    <div className="mx-auto w-screen max-h-[100dvh] h-dvh overflow-auto rounded-2xl">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-0 mt-10">
+        <ElectricBorder color="#38bdf8" speed={1.1} chaos={0.03} borderRadius={22}>
+          <div className="relative overflow-visible rounded-3xl border border-white/20 bg-white/10 !p-5">
+            <Link
+              className="w-fit mx-auto flex items-center justify-center"
+              to={ROUTES.INDEX}
+            >
+              <img src={IMGS.COMPLETE_LOGO} alt="" className="w-40 bg-transparent" />
+            </Link>
+            <div className="mt-6">
+              <Steps current={currentStep} items={stepItems} size="small" />
+            </div>
+            {currentStep === 0 ? (
+              <>
+                <ProposalForm
+                  form={form}
+                  values={proposalInitialValues}
+                  onValuesChange={handleValuesChange}
+                  completion={completion}
+                  copy={copy}
+                  requiredFields={requiredFields}
+                />
+                {errorMessage ? (
+                  <Typography.Text type="danger">{errorMessage}</Typography.Text>
+                ) : null}
+                <section className="w-full flex items-center justify-end my-5">
+                  <ProposalActions
+                    copy={copy}
+                    onGenerate={handleGenerate}
+                    isGenerateDisabled={isGenerateDisabled}
+                    isSubmitting={isSubmitting}
+                  />
+                </section>
+              </>
+            ) : null}
+            {currentStep === 1 ? (
+              <div className="mt-6 rounded-2xl border border-white/20 bg-white/20 p-6 text-center text-slate-700 backdrop-blur">
+                <Typography.Title level={4} className="!mb-1">
+                  {copy.generating.title}
+                </Typography.Title>
+                <Typography.Text>{copy.generating.subtitle}</Typography.Text>
+              </div>
+            ) : null}
+            {currentStep === 2 ? (
+              <div className="mt-6 flex flex-col gap-6 lg:flex-row !relative">
+                <div className="flex-1 rounded-2xl border border-white/30 bg-white/70 p-6 shadow-sm">
+                  <div
+                    ref={previewRef}
+                    className={`text-sm leading-6 text-slate-800 ${
+                      isEditing ? "rounded-lg border border-slate-200 p-4" : ""
+                    }`}
+                    contentEditable={isEditing}
+                    suppressContentEditableWarning
+                    dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  />
+                </div>
+                <aside className="sticky top-6 right-0 w-full h-fit rounded-2xl border border-white/30 bg-white/50 p-5 lg:w-64">
+                  <div className="space-y-4">
+                    <div>
+                      <Typography.Text className="text-xs uppercase tracking-[0.2em] text-slate-500">
+                        {copy.previewModal.controls}
+                      </Typography.Text>
+                      <Typography.Title level={5} className="mt-2 !mb-0">
+                        {isEditing
+                          ? copy.previewModal.editing
+                          : copy.previewModal.readOnly}
+                      </Typography.Title>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Button onClick={handleToggleEdit} disabled={isSubmitting}>
+                        {isEditing ? copy.previewModal.save : copy.previewModal.edit}
+                      </Button>
+                      <Button
+                        onClick={handleGenerate}
+                        loading={isSubmitting}
+                        disabled={!hasGenerated || isSubmitting}
+                      >
+                        {copy.actions.regenerate}
+                      </Button>
+                      <Dropdown menu={exportMenu} placement="bottomRight">
+                        <Button type="primary" disabled={isSubmitting}>
+                          {copy.previewModal.export}
+                        </Button>
+                      </Dropdown>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            ) : null}
           </div>
-        </Space>
-      </header>
-
-      <Card className="proposal-card proposal-steps">
-        <Space direction="vertical" size="middle" className="proposal-steps__body">
-          <Steps
-            current={stageIndex < 0 ? 0 : stageIndex}
-            items={proposalStages.map((item) => ({ title: item.label }))}
-            size="small"
-          />
-          <Divider className="proposal-divider" />
-          <Typography.Text type="secondary">{stageStatusLabel}</Typography.Text>
-        </Space>
-      </Card>
-
-      <div className="proposal-grid">
-        <div className="proposal-grid__left">
-          <Card className="proposal-card">
-            <ProposalForm
-              form={form}
-              values={proposalInitialValues}
-              onValuesChange={handleValuesChange}
-              autoGenerate={autoGenerate}
-              onToggleAutoGenerate={setAutoGenerate}
-              completion={completion}
-              copy={copy}
-              riskOptions={riskLevelOptions}
-            />
-          </Card>
-          <Card className="proposal-card">
-            <ProposalStatus
-              stage={stage}
-              stageLabel={stageLabel}
-              statusLabel={stageStatusLabel}
-              progress={progress}
-              draft={draftToDisplay}
-            />
-          </Card>
-        </div>
-        <div className="proposal-grid__right">
-          <Card className="proposal-card proposal-preview-card">
-            <ProposalPreview
-              header={header}
-              sections={sections}
-              values={formValues}
-              copy={copy}
-            />
-          </Card>
-        </div>
+        </ElectricBorder>
       </div>
-
-      <Card className="proposal-card">
-        <ProposalActions
-          stage={stage}
-          copy={copy}
-          onGenerate={handleGenerate}
-          onFinalize={handleFinalize}
-          onDownload={handleDownload}
-          downloadNotice={downloadNotice}
-        />
-      </Card>
     </div>
   );
 };

@@ -1,12 +1,23 @@
 import { ROUTES } from "../constants";
 import { createBrowserRouter } from "react-router-dom";
-import { Home } from "../pages";
+import { Home, Landing } from "../pages";
+import MainLayout from "../components/MainLayout";
 
-const MainNavigator = createBrowserRouter([
-  {
-    path: ROUTES.INDEX,
-    Component: Home,
-  },
-]);
+const createMainRouter = ({ themeMode, onToggleTheme }) =>
+  createBrowserRouter([
+    {
+      element: <MainLayout />,
+      children: [
+        {
+          path: ROUTES.INDEX,
+          element: <Landing />,
+        },
+        {
+          path: ROUTES.GENERATE_PROPOSAL,
+          element: <Home themeMode={themeMode} onToggleTheme={onToggleTheme} />,
+        },
+      ],
+    },
+  ]);
 
-export default MainNavigator;
+export default createMainRouter;

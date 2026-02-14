@@ -1,4 +1,5 @@
 export default {
   INDEX: "/",
-  LOGIN: '/login'
+  GENERATE_PROPOSAL: "/generate-propsal",
+  LOGIN: "/login",
 };

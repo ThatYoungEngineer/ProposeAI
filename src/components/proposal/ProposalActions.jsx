@@ -1,53 +1,18 @@
-import { Alert, Button, Space, Typography } from "..";
+import { Button, Space } from "..";
 
-const ProposalActions = ({
-  stage,
-  copy,
-  onGenerate,
-  onFinalize,
-  onDownload,
-  downloadNotice,
-}) => {
-  const isGenerating = stage === "generating";
-  const isReview = stage === "review";
-  const isFinal = stage === "finalize";
-  const generateLabel = isReview || isFinal ? copy.actions.regenerate : copy.actions.generate;
-
+const ProposalActions = ({ copy, onGenerate, isSubmitting, isGenerateDisabled }) => {
   return (
     <Space direction="vertical" size="middle" className="proposal-actions">
-      <Space wrap>
+      <Space direction="vertical" size="small">
         <Button
           type="primary"
           onClick={onGenerate}
-          loading={isGenerating}
-          disabled={isGenerating}
+          loading={isSubmitting}
+          disabled={isSubmitting || isGenerateDisabled}
         >
-          {generateLabel}
+          {isSubmitting ? copy.actions.generating : copy.actions.generate}
         </Button>
-        {isReview ? (
-          <Button type="default" onClick={onFinalize}>
-            {copy.actions.finalize}
-          </Button>
-        ) : null}
-        {isFinal ? (
-          <>
-            <Button type="primary" onClick={() => onDownload("pdf")}>
-              {copy.actions.downloadPdf}
-            </Button>
-            <Button onClick={() => onDownload("docx")}>
-              {copy.actions.exportDocx}
-            </Button>
-          </>
-        ) : null}
       </Space>
-
-      {isFinal ? (
-        <Typography.Text type="secondary">{copy.download.helper}</Typography.Text>
-      ) : null}
-
-      {downloadNotice ? (
-        <Alert showIcon type="success" message={downloadNotice} />
-      ) : null}
     </Space>
   );
 };

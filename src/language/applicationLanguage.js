@@ -1,11 +1,151 @@
 export default {
   eng: {
+    landingPage: {
+      title: "AI-Powered Proposal Generation",
+      subtitle:
+        "Capture project details in a clean, validated form and generate client-ready proposals with confidence.",
+      cta: "Generate Proposal",
+      customize: {
+        title: "Customize",
+        mouseInteraction: "Mouse Interaction",
+        mouseRepulsion: "Mouse Repulsion",
+        sliders: [
+          {
+            key: "density",
+            label: "Density",
+            min: 0.2,
+            max: 2,
+            step: 0.1,
+            format: (value) => value.toFixed(1),
+            onChange:
+              ({ setDensity }) =>
+              (value) =>
+                setDensity(value),
+          },
+          {
+            key: "glowIntensity",
+            label: "Glow Intensity",
+            min: 0,
+            max: 1,
+            step: 0.05,
+            format: (value) => value.toFixed(2),
+            onChange:
+              ({ setGlowIntensity }) =>
+              (value) =>
+                setGlowIntensity(value),
+          },
+          {
+            key: "saturation",
+            label: "Saturation",
+            min: 0,
+            max: 1,
+            step: 0.05,
+            format: (value) => value.toFixed(2),
+            onChange:
+              ({ setSaturation }) =>
+              (value) =>
+                setSaturation(value),
+          },
+          {
+            key: "hueShift",
+            label: "Hue Shift",
+            min: 0,
+            max: 360,
+            step: 5,
+            format: (value) => `${Math.round(value)}°`,
+            onChange:
+              ({ setHueShift }) =>
+              (value) =>
+                setHueShift(value),
+          },
+          {
+            key: "twinkleIntensity",
+            label: "Twinkle Intensity",
+            min: 0,
+            max: 1,
+            step: 0.05,
+            format: (value) => value.toFixed(2),
+            onChange:
+              ({ setTwinkleIntensity }) =>
+              (value) =>
+                setTwinkleIntensity(value),
+          },
+          {
+            key: "rotationSpeed",
+            label: "Rotation Speed",
+            min: 0,
+            max: 0.6,
+            step: 0.02,
+            format: (value) => value.toFixed(2),
+            onChange:
+              ({ setRotationSpeed }) =>
+              (value) =>
+                setRotationSpeed(value),
+          },
+          {
+            key: "repulsionStrength",
+            label: "Repulsion Strength",
+            min: 0,
+            max: 6,
+            step: 0.2,
+            format: (value) => value.toFixed(1),
+            onChange:
+              ({ setRepulsionStrength }) =>
+              (value) =>
+                setRepulsionStrength(value),
+          },
+          {
+            key: "autoCenterRepulsion",
+            label: "Auto Center Repulsion",
+            min: 0,
+            max: 2,
+            step: 0.1,
+            format: (value) => value.toFixed(1),
+            onChange:
+              ({ setAutoCenterRepulsion }) =>
+              (value) =>
+                setAutoCenterRepulsion(value),
+          },
+          {
+            key: "starSpeed",
+            label: "Star Speed",
+            min: 0,
+            max: 2,
+            step: 0.1,
+            format: (value) => value.toFixed(1),
+            onChange:
+              ({ setStarSpeed }) =>
+              (value) =>
+                setStarSpeed(value),
+          },
+          {
+            key: "animationSpeed",
+            label: "Animation Speed",
+            min: 0,
+            max: 4,
+            step: 0.1,
+            format: (value) => value.toFixed(1),
+            onChange:
+              ({ setAnimationSpeed }) =>
+              (value) =>
+                setAnimationSpeed(value),
+          },
+        ],
+      },
+    },
+    minimalNavbar: {
+      brand: "React Bits",
+      links: [
+        { key: "home", label: "Home", href: "/" },
+        { key: "docs", label: "Docs", href: "/generate-propsal" },
+      ],
+    },
     proposalGenerator: {
       header: {
-        title: "AI-Powered Proposal Studio",
+        title: "ProposeAI",
         subtitle:
           "Design, generate, and refine client-ready proposals with real-time AI drafting and a compliant company template.",
-        templateTag: "Company Template v2.1",
+        templateTag: "",
         liveBadge: "Live",
         darkMode: "Dark mode",
       },
@@ -15,70 +155,98 @@ export default {
         review: "Preview",
         finalize: "Finalize",
       },
+      steps: {
+        input: "Input",
+        generating: "Generating",
+        preview: "Preview",
+      },
       form: {
-        title: "Project Details",
+        title: "Proposal Inputs",
         description:
-          "Provide the key project details. The proposal updates in real time as you type.",
-        projectName: {
-          label: "Project name",
-          placeholder: "Horizon CRM Rebuild",
-          required: "Project name is required.",
-        },
+          "Share the client and project details below to generate a tailored proposal.",
+        optionalLabel: "Optional",
         clientName: {
           label: "Client name",
           placeholder: "Northwind Logistics",
           required: "Client name is required.",
         },
-        scope: {
-          label: "Scope overview",
+        projectTitle: {
+          label: "Project title",
+          placeholder: "Horizon CRM Rebuild",
+          required: "Project title is required.",
+        },
+        projectScope: {
+          label: "Project description / scope",
           placeholder:
             "Modernize the CRM to improve sales forecasting, lead qualification, and reporting.",
-          required: "Scope overview is required.",
+          required: "Project description is required.",
         },
-        timelineStart: {
-          label: "Start date",
-          placeholder: "2026-03-02",
-        },
-        timelineEnd: {
-          label: "Target completion",
-          placeholder: "2026-07-30",
+        timelineEstimate: {
+          label: "Timeline estimate",
+          placeholder: "10-12 weeks",
+          required: "Timeline estimate is required.",
         },
         objectives: {
-          label: "Objectives (one per line)",
+          label: "Key objectives (one per line)",
           placeholder:
             "Increase win rate by 15%\nAutomate weekly pipeline reporting\nImprove lead response time",
+          required: "Objectives are required.",
         },
         deliverables: {
-          label: "Key deliverables (one per line)",
+          label: "Deliverables (one per line)",
           placeholder:
             "Discovery workshop\nAI-assisted lead scoring\nExecutive dashboards",
+          required: "Deliverables are required.",
         },
-        budget: {
-          label: "Estimated budget (USD)",
-          placeholder: "150000",
+        budgetRange: {
+          label: "Budget range",
+          placeholder: "$50k - $75k",
         },
-        techStack: {
-          label: "Preferred tech stack",
+        technologyStack: {
+          label: "Technology stack",
           placeholder: "React, Node.js, PostgreSQL, OpenAI",
         },
-        riskLevel: {
-          label: "Risk profile",
-          placeholder: "Select risk level",
+        assumptions: {
+          label: "Assumptions",
+          placeholder: "Client provides weekly stakeholder access and data extracts.",
         },
-        notes: {
-          label: "Special notes",
-          placeholder:
-            "Include rollout support and enablement for regional sales teams.",
+        risks: {
+          label: "Risks",
+          placeholder: "Legacy system access delays, change management adoption.",
         },
-        autoGenerate: "Auto-generate draft",
+        teamStructure: {
+          label: "Team structure",
+          placeholder: "PM, Tech Lead, 2x Engineers, QA, UX",
+        },
+        supportModel: {
+          label: "Support model",
+          placeholder: "30-day hypercare with weekly check-ins",
+        },
         completionLabel: "Completion",
       },
       actions: {
         generate: "Generate proposal",
+        generating: "Generating...",
         regenerate: "Regenerate draft",
         finalize: "Finalize proposal",
         downloadPdf: "Download PDF",
         exportDocx: "Export DOCX",
+      },
+      previewModal: {
+        title: "Generated Proposal",
+        edit: "Edit",
+        save: "Save",
+        download: "Download PDF",
+        close: "Close",
+        downloadTitle: "Proposal",
+        downloadFileName: "proposal",
+        export: "Export",
+        exportPdf: "Export PDF",
+        controls: "Controls",
+        readOnly: "Read-only",
+        editing: "Editing",
+        error: "Failed to generate proposal. Please try again.",
+        empty: "The response did not include any HTML to preview.",
       },
       preview: {
         title: "Live Proposal Preview",
@@ -98,6 +266,10 @@ export default {
         statusReview: "Draft ready for review.",
         statusFinal: "Proposal finalized and export-ready.",
         typingLabel: "AI is drafting",
+      },
+      generating: {
+        title: "Generating proposal",
+        subtitle: "We’re creating your proposal based on the latest inputs.",
       },
       download: {
         helper:
